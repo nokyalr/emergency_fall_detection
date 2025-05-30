@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "964017094902",
+    "firebase_url": "https://emergencyfalldetection-725cb-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "emergencyfalldetection-725cb",
+    "storage_bucket": "emergencyfalldetection-725cb.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:964017094902:android:c1a83eac39d6ffc9e06cd7",
+        "android_client_info": {
+          "package_name": "com.example.emergency_fall_detection"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBUfvkUv46XAa_bkwgRysLN8aqdAUPIBM8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
