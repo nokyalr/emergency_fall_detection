@@ -35,6 +35,26 @@ class _MyAppState extends State<MyApp> {
   int lastSeenEpoch = 0;
   Timer? timer;
 
+  @override
+  void initState() {
+    super.initState();
+    mapController = MapController();
+    listenToFallData();
+
+    // Update status ESP32 setiap detik
+    timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      setState(() {
+        esp32Online = isEspOnline();
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    timer?.cancel();
+    super.dispose();
+  }
+
   void listenToFallData() {
     final dbRef = FirebaseDatabase.instance.ref();
 
@@ -65,9 +85,8 @@ class _MyAppState extends State<MyApp> {
           esp32Online = isEspOnline();
         });
 
-        // Hanya pindah peta dan cari rumah sakit jika ada lokasi valid
+        // Hanya cari rumah sakit jika ada lokasi valid
         if (fallLocation != null) {
-          mapController.move(fallLocation!, 16.0);
           fetchNearbyHospitals();
         }
       }
@@ -82,6 +101,17 @@ class _MyAppState extends State<MyApp> {
 
     // Jika data terakhir lebih baru dari 15 detik yang lalu, anggap online
     return diff < 15;
+  }
+
+  String getTimeSinceLastSeen() {
+    if (lastSeenEpoch == 0) return 'Never';
+
+    final now = DateTime.now().toUtc().millisecondsSinceEpoch ~/ 1000;
+    final diff = now - lastSeenEpoch;
+
+    if (diff < 60) return '${diff}s ago';
+    if (diff < 3600) return '${diff ~/ 60}m ago';
+    return '${diff ~/ 3600}h ago';
   }
 
   void fetchNearbyHospitals() async {
@@ -151,35 +181,16 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
-  String getTimeSinceLastSeen() {
-    if (lastSeenEpoch == 0) return 'Never';
-
-    final now = DateTime.now().toUtc().millisecondsSinceEpoch ~/ 1000;
-    final diff = now - lastSeenEpoch;
-
-    if (diff < 60) return '${diff}s ago';
-    if (diff < 3600) return '${diff ~/ 60}m ago';
-    return '${diff ~/ 3600}h ago';
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    mapController = MapController();
-    listenToFallData();
-
-    // Update status ESP32 setiap detik
-    timer = Timer.periodic(const Duration(seconds: 1), (_) {
-      setState(() {
-        esp32Online = isEspOnline();
-      });
-    });
-  }
-
-  @override
-  void dispose() {
-    timer?.cancel();
-    super.dispose();
+  void centerMapToGPS() {
+    if (fallLocation != null) {
+      mapController.move(fallLocation!, 16.0);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Map centered to GPS location'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
   }
 
   @override
@@ -196,7 +207,18 @@ class _MyAppState extends State<MyApp> {
         ),
       ),
       home: Scaffold(
-        appBar: AppBar(title: const Text('Fall Detection Monitor')),
+        appBar: AppBar(
+          title: const Text('Fall Detection Monitor'),
+          actions: [
+            // Manual center to GPS
+            if (fallLocation != null)
+              IconButton(
+                onPressed: centerMapToGPS,
+                icon: const Icon(Icons.my_location),
+                tooltip: 'Center to GPS Location',
+              ),
+          ],
+        ),
         body: Column(
           children: [
             // Status Banner
