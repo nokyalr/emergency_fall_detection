@@ -9,7 +9,22 @@ import 'dart:async';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
+
+  // Konfigurasi Firebase untuk Web
+  await Firebase.initializeApp(
+    options: const FirebaseOptions(
+      apiKey: "AIzaSyD4X5U4LJlGJkYgC_AcOpzNjzwOuvTRqTo",
+      authDomain: "emergencyfalldetection-725cb.firebaseapp.com",
+      databaseURL:
+          "https://emergencyfalldetection-725cb-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "emergencyfalldetection-725cb",
+      storageBucket: "emergencyfalldetection-725cb.firebasestorage.app",
+      messagingSenderId: "964017094902",
+      appId: "1:964017094902:web:048ac99123e77189e06cd7",
+      measurementId: "G-QNR00LVH5E",
+    ),
+  );
+
   runApp(const MyApp());
 }
 
@@ -199,6 +214,7 @@ class _MyAppState extends State<MyApp> {
 
     return MaterialApp(
       title: 'Fall Detection Monitor',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
         primarySwatch: Colors.blue,
         appBarTheme: const AppBarTheme(
