@@ -10,20 +10,28 @@ import 'dart:async';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Konfigurasi Firebase untuk Web
-  await Firebase.initializeApp(
-    options: const FirebaseOptions(
-      apiKey: "AIzaSyD4X5U4LJlGJkYgC_AcOpzNjzwOuvTRqTo",
-      authDomain: "emergencyfalldetection-725cb.firebaseapp.com",
-      databaseURL:
-          "https://emergencyfalldetection-725cb-default-rtdb.asia-southeast1.firebasedatabase.app",
-      projectId: "emergencyfalldetection-725cb",
-      storageBucket: "emergencyfalldetection-725cb.firebasestorage.app",
-      messagingSenderId: "964017094902",
-      appId: "1:964017094902:web:048ac99123e77189e06cd7",
-      measurementId: "G-QNR00LVH5E",
-    ),
-  );
+  // Check if Firebase is already initialized to prevent duplicate app error
+  try {
+    // For Android, Firebase will be initialized automatically from google-services.json
+    // For Web, we need to provide the configuration manually
+    if (Firebase.apps.isEmpty) {
+      await Firebase.initializeApp(
+        options: const FirebaseOptions(
+          apiKey: "AIzaSyD4X5U4LJlGJkYgC_AcOpzNjzwOuvTRqTo",
+          authDomain: "emergencyfalldetection-725cb.firebaseapp.com",
+          databaseURL:
+              "https://emergencyfalldetection-725cb-default-rtdb.asia-southeast1.firebasedatabase.app",
+          projectId: "emergencyfalldetection-725cb",
+          storageBucket: "emergencyfalldetection-725cb.firebasestorage.app",
+          messagingSenderId: "964017094902",
+          appId: "1:964017094902:web:048ac99123e77189e06cd7",
+          measurementId: "G-QNR00LVH5E",
+        ),
+      );
+    }
+  } catch (e) {
+    print('Firebase initialization error: $e');
+  }
 
   runApp(const MyApp());
 }
@@ -49,6 +57,7 @@ class _MyAppState extends State<MyApp> {
   double movementVariance = 0.0;
   int lastSeenEpoch = 0;
   Timer? timer;
+  StreamSubscription<DatabaseEvent>? _databaseSubscription;
 
   @override
   void initState() {
@@ -58,23 +67,26 @@ class _MyAppState extends State<MyApp> {
 
     // Update status ESP32 setiap detik
     timer = Timer.periodic(const Duration(seconds: 1), (_) {
-      setState(() {
-        esp32Online = isEspOnline();
-      });
+      if (mounted) {
+        setState(() {
+          esp32Online = isEspOnline();
+        });
+      }
     });
   }
 
   @override
   void dispose() {
     timer?.cancel();
+    _databaseSubscription?.cancel();
     super.dispose();
   }
 
   void listenToFallData() {
     final dbRef = FirebaseDatabase.instance.ref();
 
-    dbRef.onValue.listen((event) {
-      if (event.snapshot.exists) {
+    _databaseSubscription = dbRef.onValue.listen((event) {
+      if (event.snapshot.exists && mounted) {
         final data = event.snapshot.value as Map;
 
         final fall = data['fall_detection'] as Map?;
@@ -143,12 +155,14 @@ class _MyAppState extends State<MyApp> {
         final data = json.decode(response.body);
         final elements = data['elements'] as List;
 
-        setState(() {
-          hospitals = elements
-              .map((e) => e['tags']?['name'] ?? 'Unnamed Hospital')
-              .cast<String>()
-              .toList();
-        });
+        if (mounted) {
+          setState(() {
+            hospitals = elements
+                .map((e) => e['tags']?['name'] ?? 'Unnamed Hospital')
+                .cast<String>()
+                .toList();
+          });
+        }
       } else {
         print('Failed to fetch hospitals: ${response.statusCode}');
       }
@@ -199,12 +213,14 @@ class _MyAppState extends State<MyApp> {
   void centerMapToGPS() {
     if (fallLocation != null) {
       mapController.move(fallLocation!, 16.0);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Map centered to GPS location'),
-          duration: Duration(seconds: 2),
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Map centered to GPS location'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
     }
   }
 
